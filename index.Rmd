@@ -1,0 +1,74 @@
+<u>Practical Machine Learning - Course Project</u>
+========================================================
+
+The Main Goal of this Project is to Predict to which <i>"Classe"</i> the performed exercise belongs to. We are given a training data set & a test data set seperately. The raw training data set contains untidy data which will not at help in fufilling our goal. So it is necessary to clean up the training data set in order for the prediction to work.
+
+```{r}
+library(caret)
+library(randomForest)
+library(rattle)
+library(rpart)
+set.seed(2804)
+trainingfit <- read.csv("~/pml-training.csv")
+testingfit <- read.csv("~/pml-testing.csv")
+```
+
+## <b>Data Cleaning</b>
+Once the training & testing data is loaded, we can get the summary and structure information of the training data set using the following functions:
+
+```{r}
+## Displaying only select summary for demo purpose
+summary(trainingfit[1:10])
+## Displaying only select variable structure for demo purpose
+str(trainingfit,list.len=10)
+```
+
+From the summary and str function on the training data set, the useful <b>features can be extracted</b> and the ones with <b>NA</b> values or with a <b>divide by zero</b> error, in this case, can be ignored. 
+Therefore, I extracted the features that contained proper values which could be used for creating a model in order to predict on the test data set. The proper predictors were:
+* The Euler angles (roll, pitch & yaw) for all the four sensors, 
+* The accelerometers, gyroscope & magnetometer readings for all the four sensors on all the three axis and 
+* The Total accelerometers reading specifically for all four sensors.
+
+Thus, we can get a <b>clean training data set</b> with the help of following commands:
+```{r}
+myvars <- names(trainingfit) %in% c("user_name","roll_belt","pitch_belt","yaw_belt","total_accel_belt","gyros_belt_x"
+,"gyros_belt_y","gyros_belt_z","accel_belt_x","accel_belt_y","accel_belt_z"
+,"magnet_belt_x","magnet_belt_y","magnet_belt_z","roll_arm","pitch_arm","yaw_arm"
+,"total_accel_arm","gyros_arm_x","gyros_arm_y","gyros_arm_z","accel_arm_x"
+,"accel_arm_y","accel_arm_z","magnet_arm_x","magnet_arm_y","magnet_arm_z"
+,"roll_dumbbell","pitch_dumbbell","yaw_dumbbell","total_accel_dumbbell"
+,"gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z","accel_dumbbell_x"
+,"accel_dumbbell_y","accel_dumbbell_z","magnet_dumbbell_x","magnet_dumbbell_y"
+,"magnet_dumbbell_z","roll_forearm","pitch_forearm","yaw_forearm"
+,"total_accel_forearm","gyros_forearm_x","gyros_forearm_y","gyros_forearm_z"
+,"accel_forearm_x","accel_forearm_y","accel_forearm_z","magnet_forearm_x"
+,"magnet_forearm_y","magnet_forearm_z","classe")
+
+cleanFitData = trainingfit[myvars]
+```
+
+## <b>Model Building</b>
+### Rpart
+Using Rpart we can get a brief idea about the prediction that we can apply on the test data set inorder to predict the outcome i.e. classe for the test data. Refer following plot.
+```{r}
+fitRpart <- train(classe ~., data=cleanFitData[,-55], method="rpart")
+fancyRpartPlot(fitRpart$finalModel)
+```
+### Random Forest 
+I built my model using <u>Random Forest</u> on the outcome variable <i>classe</i> and rest of the features, from the tidy train data set, as predictors.
+It creates 200 trees as samples and generates a model taking the predictors importance into consideration.
+The model is then applied to the test data set to predict <i>classe</i> on the test data set using the predict function to get the desired result to fulfill the goal.
+
+```{r}
+modfit <- randomForest(classe ~ ., data=cleanFitData[,-55], importance=TRUE, ntree=200)
+modfit$confusion
+predRF = predict(modfit,newdata=testingfit)
+submit <- data.frame(classe = predRF)
+submit
+```
+
+
+```{r fig.width=7, fig.height=6}
+
+```
+
